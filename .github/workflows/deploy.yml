@@ -65,5 +65,6 @@ jobs:
       - name: CDK synth
         run: npx cdk synth
         env:
+          BAKEHOUSE_STACK_NAME: andrew-milne-bakehouse
           CDK_SESSION: ${{ steps.session.outputs.session }}
           CDK_ENV: ${{ steps.detect-env.outputs.environment }}
