@@ -1,1 +1,66 @@
-test
+name: CDK Pipeline (Test)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect environment
+        id: detect-env
+        run: |
+          BRANCH_NAME="${{ github.ref }}"
+          if [[ "${BRANCH_NAME}" == "refs/heads/main" ]]; then
+              ENV="staging"
+              ACCOUNT="YOUR_ACCOUNT_ID"
+          else
+              ENV="dev"
+              ACCOUNT="YOUR_ACCOUNT_ID"
+          fi
+          echo "environment=${ENV}" >> $GITHUB_OUTPUT
+          echo "account=${ACCOUNT}" >> $GITHUB_OUTPUT
+
+      - name: Extract student information
+        id: student-info
+        run: |
+          STUDENT_NAME="${{ github.actor }}"
+          echo "name=${STUDENT_NAME}" >> $GITHUB_OUTPUT
+          echo "Student: ${STUDENT_NAME}"
+
+      - name: Generate session name
+        id: session-naming
+        run: |
+          STUDENT="${{ github.actor }}"
+          RUN_ID="${{ github.run_id }}"
+          ATTEMPT="${{ github.run_attempt }}"
+
+          SESSION_NAME="gha-cdk-${STUDENT}-${RUN_ID}-${ATTEMPT}"
+
+          echo "session-name=${SESSION_NAME}" >> $GITHUB_OUTPUT
+          echo "Generated session name: ${SESSION_NAME}"
+
+          if [ ${#SESSION_NAME} -gt 64 ]; then
+              echo "❌ Session name too long!"
+              exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: CDK synth
+        run: npx cdk synth
