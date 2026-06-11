@@ -1,56 +1,53 @@
-name: CDK Pipeline (Test)
+name: CDK Multi-User Pipeline
 
 on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ----------------------------
+      # Identify user + environment
+      # ----------------------------
       - name: Detect environment
         id: detect-env
         run: |
-          BRANCH_NAME="${{ github.ref }}"
-          if [[ "${BRANCH_NAME}" == "refs/heads/main" ]]; then
-              ENV="staging"
-              ACCOUNT="YOUR_ACCOUNT_ID"
+          BRANCH="${{ github.ref }}"
+
+          if [[ "$BRANCH" == "refs/heads/main" ]]; then
+            ENV="staging"
           else
-              ENV="dev"
-              ACCOUNT="YOUR_ACCOUNT_ID"
+            ENV="dev"
           fi
-          echo "environment=${ENV}" >> $GITHUB_OUTPUT
-          echo "account=${ACCOUNT}" >> $GITHUB_OUTPUT
 
-      - name: Extract student information
-        id: student-info
-        run: |
-          STUDENT_NAME="${{ github.actor }}"
-          echo "name=${STUDENT_NAME}" >> $GITHUB_OUTPUT
-          echo "Student: ${STUDENT_NAME}"
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
 
+      # ----------------------------
+      # Identify developer
+      # ----------------------------
       - name: Generate session name
-        id: session-naming
+        id: session
         run: |
-          STUDENT="${{ github.actor }}"
+          USER="${{ github.actor }}"
           RUN_ID="${{ github.run_id }}"
           ATTEMPT="${{ github.run_attempt }}"
 
-          SESSION_NAME="gha-cdk-${STUDENT}-${RUN_ID}-${ATTEMPT}"
+          SESSION="cdk-${ENV}-${USER}-${RUN_ID}-${ATTEMPT}"
 
-          echo "session-name=${SESSION_NAME}" >> $GITHUB_OUTPUT
-          echo "Generated session name: ${SESSION_NAME}"
+          echo "session=$SESSION" >> $GITHUB_OUTPUT
+          echo "Session: $SESSION"
 
-          if [ ${#SESSION_NAME} -gt 64 ]; then
-              echo "❌ Session name too long!"
-              exit 1
-          fi
-
+      # ----------------------------
+      # Setup runtime
+      # ----------------------------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -62,5 +59,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # ----------------------------
+      # CDK synth with isolation
+      # ----------------------------
       - name: CDK synth
         run: npx cdk synth
+        env:
+          CDK_SESSION: ${{ steps.session.outputs.session }}
+          CDK_ENV: ${{ steps.detect-env.outputs.environment }}
