@@ -83,3 +83,11 @@ jobs:
           BAKEHOUSE_STACK_NAME: andrew-milne-bakehouse
           CDK_SESSION: ${{ steps.session.outputs.session }}
           CDK_ENV: ${{ steps.detect-env.outputs.environment }}
+
+      # Deploy
+      - name: CDK deploy
+        run: npx cdk deploy --require-approval never
+        env:
+          BAKEHOUSE_STACK_NAME: andrew-milne-bakehouse
+          CDK_SESSION: ${{ steps.session.outputs.session }}
+          CDK_ENV: ${{ steps.detect-env.outputs.environment }}
