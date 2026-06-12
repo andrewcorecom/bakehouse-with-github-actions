@@ -1,5 +1,9 @@
 name: CDK Multi-User Pipeline
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   push:
     branches:
@@ -64,6 +68,13 @@ jobs:
       # Build CDK project (only if your package.json has a build script)
       - name: Build
         run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::827602716979:role/github-actions-andrew-milne-bakehouse
+          aws-region: eu-west-2
+          role-session-name: ${{ steps.session.outputs.session }}
 
       # Synthesize CloudFormation
       - name: CDK synth
