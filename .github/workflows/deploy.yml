@@ -95,3 +95,11 @@ jobs:
           BAKEHOUSE_STACK_NAME: andrew-milne-bakehouse
           CDK_SESSION: ${{ steps.session.outputs.session }}
           CDK_ENV: ${{ steps.detect-env.outputs.environment }}
+      
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 smoke tests
+        uses: grafana/run-k6-action@v1
+        with:
+          path: tests/k6/smoke.js
